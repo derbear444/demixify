@@ -7,3 +7,6 @@ node_modules
 .env
 dist
 .DS_Store
+api/checkpoints
+api/combos
+api/__pycache__
