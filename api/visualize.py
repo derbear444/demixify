@@ -8,6 +8,7 @@ import librosa
 import librosa.display
 import os
 import api.defaults as defaults
+import io
 
 warnings.filterwarnings("ignore")
 
@@ -29,7 +30,7 @@ def visualize_and_embed_notebook(sources):
     plt.show()
     nussl.play_utils.multitrack(sources)
 
-def visualize_and_embed(sources):
+def visualize_and_embed(sources, song_name):
     plt.figure(figsize=(10, 6))
     plt.subplot(211)
     nussl.utils.visualize_sources_as_masks(sources,
@@ -37,8 +38,13 @@ def visualize_and_embed(sources):
     plt.subplot(212)
     nussl.utils.visualize_sources_as_waveform(
         sources, show_legend=False)
-    plt.show()
-    return nussl.play_utils.multitrack(sources)
+    nussl.play_utils.multitrack(sources)
+    bytes_image = io.BytesIO()
+    plot_name = "%s-plot.png" % (song_name)
+    plot_path = os.path.join(api_dir, plot_name)
+    plt.savefig(bytes_image, format='png')
+    bytes_image.seek(0)
+    return bytes_image
 
 def visualize(song_name):
 
@@ -58,4 +64,4 @@ def visualize(song_name):
     end_time = time.time()
     time_taken = end_time - start_time
     time_string = f'Time taken: {time_taken:.4f} seconds'
-    return visualize_and_embed(fin_estimates)
+    return visualize_and_embed(fin_estimates, song_name)

@@ -1,4 +1,4 @@
-from flask import Flask, request, Response, jsonify
+from flask import Flask, request, Response, jsonify, send_file
 from flask_cors import CORS
 from api import app
 import base64
@@ -44,7 +44,7 @@ def get_visualization():
         combo_name = args['combo_name']
         
     if combo_name:
-        json_data = cursor_to_json(visualize.visualize(combo_name))
+        return send_file(visualize.visualize(combo_name), mimetype='image/png')
     else:
         json_data = cursor_to_json("""No data provided!""")
         
