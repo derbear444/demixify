@@ -7,9 +7,9 @@ import torch
 import librosa
 import librosa.display
 import os
+import api.defaults as defaults
 
 warnings.filterwarnings("ignore")
-start_time = time.time()
 
 nussl.utils.seed(0)
 
@@ -41,6 +41,12 @@ def visualize_and_embed(sources):
     return nussl.play_utils.multitrack(sources)
 
 def visualize(song_name):
+
+    if song_name not in defaults.SONG_LIST:
+        return "Request song not in database."
+    
+    start_time = time.time()
+
     combo_name = "%s-combined.npy" %(song_name)
     combo_path = os.path.join(combos_dir, combo_name)
 
@@ -49,4 +55,7 @@ def visualize(song_name):
         final_ests = np.load(f, allow_pickle=True)
 
     fin_estimates = {f'Source {i}': e for i, e in enumerate(final_ests)}
+    end_time = time.time()
+    time_taken = end_time - start_time
+    time_string = f'Time taken: {time_taken:.4f} seconds'
     return visualize_and_embed(fin_estimates)

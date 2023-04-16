@@ -36,9 +36,13 @@ def get_song_list():
 
 #send off a song and get the visualization data for it
 @app.route("/api/visualize", methods=["GET"])
-def get_visualization(combo_name):
+def get_visualization():
+    args = request.args
     json_data = {}
     
+    if args['combo_name']:
+        combo_name = args['combo_name']
+        
     if combo_name:
         json_data = cursor_to_json(visualize.visualize(combo_name))
     else:

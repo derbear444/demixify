@@ -21,6 +21,10 @@ checkpoint_dir = os.path.join(api_dir, 'checkpoints')
 combos_dir = os.path.join(api_dir, 'combos')
 
 def combine(song_name, checkpoint_name):
+
+    if song_name not in defaults.SONG_LIST:
+        return "Request song not in database."
+    
     start_time = time.time()
     
     checkpoint_path = os.path.join(api_dir, checkpoint_name)
