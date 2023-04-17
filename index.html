@@ -7,6 +7,21 @@
     <title>Demixify API Test</title>
 </head>
 <body>
-    <img src="http://localhost:8000/api/visualize?combo_name=money.wav" alt="" />
+    <img src="http://localhost:8000/api/visualize?combo_name=flowers.wav" alt="" />
+    <section id="music"></section>
 </body>
+<script>
+    async function fetchAudio() {
+        const url = "http://localhost:8000/api/audio?combo_name=flowers.wav"
+        let res = await fetch(url, {
+            method: "GET"
+        });
+        const html = await res.json();
+        var div = document.createElement('div');
+        div.innerHTML = html.trim();
+        document.getElementById("music").appendChild(div)
+    }
+    
+    fetchAudio();
+</script>
 </html>

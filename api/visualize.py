@@ -9,6 +9,7 @@ import librosa.display
 import os
 import api.defaults as defaults
 import io
+import html
 
 warnings.filterwarnings("ignore")
 
@@ -30,7 +31,7 @@ def visualize_and_embed_notebook(sources):
     plt.show()
     nussl.play_utils.multitrack(sources)
 
-def visualize_and_embed(sources, song_name):
+def graph(sources, song_name):
     plt.figure(figsize=(10, 6))
     plt.subplot(211)
     nussl.utils.visualize_sources_as_masks(sources,
@@ -38,13 +39,14 @@ def visualize_and_embed(sources, song_name):
     plt.subplot(212)
     nussl.utils.visualize_sources_as_waveform(
         sources, show_legend=False)
-    nussl.play_utils.multitrack(sources)
     bytes_image = io.BytesIO()
-    plot_name = "%s-plot.png" % (song_name)
-    plot_path = os.path.join(api_dir, plot_name)
     plt.savefig(bytes_image, format='png')
     bytes_image.seek(0)
     return bytes_image
+
+def audio(sources):
+    ret = nussl.play_utils.multitrack(sources, display=False)
+    return ret.data
 
 def visualize(song_name):
 
@@ -64,4 +66,24 @@ def visualize(song_name):
     end_time = time.time()
     time_taken = end_time - start_time
     time_string = f'Time taken: {time_taken:.4f} seconds'
-    return visualize_and_embed(fin_estimates, song_name)
+    return graph(fin_estimates, song_name)
+
+def generate_audio(song_name):
+
+    if song_name not in defaults.SONG_LIST:
+        return "Request song not in database."
+    
+    start_time = time.time()
+
+    combo_name = "%s-combined.npy" %(song_name)
+    combo_path = os.path.join(combos_dir, combo_name)
+
+    final_ests = []
+    with open(combo_path, 'rb') as f:
+        final_ests = np.load(f, allow_pickle=True)
+
+    fin_estimates = {f'Source {i}': e for i, e in enumerate(final_ests)}
+    end_time = time.time()
+    time_taken = end_time - start_time
+    time_string = f'Time taken: {time_taken:.4f} seconds'
+    return audio(fin_estimates)
