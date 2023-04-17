@@ -70,6 +70,24 @@ def get_audio():
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
+#send off a song and get the visualization data for it
+@app.route("/api/embeded_audio", methods=["GET"])
+def get_embeded_audio():
+    args = request.args
+    json_data = {}
+    
+    if args['combo_name']:
+        combo_name = args['combo_name']
+        
+    if combo_name:
+        json_data = cursor_to_json(visualize.generate_embeded_audio(combo_name))
+    else:
+        json_data = cursor_to_json("""No data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
 #combine a checkpoint into a proper audio source and output it to the combos folder
 @app.route("/api/create_audio", methods=["POST"])
 def get_songs(song_name, checkpoint_name):

@@ -5,21 +5,21 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demixify API Test</title>
+    <script source="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 </head>
-<body>
-    <img src="http://localhost:8000/api/visualize?combo_name=flowers.wav" alt="" />
+<body id="body">
+    <!-- <img src="http://localhost:8000/api/visualize?combo_name=flowers.wav" alt="" /> -->
     <section id="music"></section>
 </body>
 <script>
     async function fetchAudio() {
-        const url = "http://localhost:8000/api/audio?combo_name=flowers.wav"
+        const url = "http://localhost:8000/api/embeded_audio?combo_name=flowers.wav"
         let res = await fetch(url, {
             method: "GET"
         });
-        const html = await res.json();
-        var div = document.createElement('div');
-        div.innerHTML = html.trim();
-        document.getElementById("music").appendChild(div)
+        const arr = await res.json();
+        const audios = arr;
+        console.log(audios);
     }
     
     fetchAudio();
