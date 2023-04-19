@@ -27,7 +27,7 @@ def combine(song_name, checkpoint_name):
     
     start_time = time.time()
     
-    checkpoint_path = os.path.join(api_dir, checkpoint_name)
+    checkpoint_path = os.path.join(checkpoint_dir, checkpoint_name)
 
     final_ests = []
     with open(checkpoint_path, 'rb') as f:

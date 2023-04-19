@@ -8,13 +8,13 @@
     <script source="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 </head>
 <body id="body">
-    <!-- <img src="http://localhost:8000/api/visualize?combo_name=flowers.wav" alt="" /> -->
+    <img src="http://localhost:8000/api/visualize?combo_name=so-much-for-stardust.wav" alt="" />
     <section id="music"></section>
 </body>
 <script>
     async function fetchAudio() {
         let audios = []
-        const url = "http://localhost:8000/api/embeded_audio?combo_name=flowers.wav"
+        const url = "http://localhost:8000/api/embeded_audio?combo_name=so-much-for-stardust.wav"
         let res = await fetch(url, {
             method: "GET"
         });

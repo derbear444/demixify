@@ -7,6 +7,7 @@ from datetime import datetime
 import api.combining as combine
 import api.visualize as visualize
 import api.defaults as defaults
+import api.training as training
 
 song_arr = defaults.SONG_LIST
 
@@ -88,11 +89,35 @@ def get_embeded_audio():
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
-#combine a checkpoint into a proper audio source and output it to the combos folder
-@app.route("/api/create_audio", methods=["POST"])
-def get_songs(song_name, checkpoint_name):
+# takes a song name and will try to demix it
+@app.route("/api/demix", methods=["GET"])
+def do_demix():
+    args = request.args
     json_data = {}
     
+    if args['song_name']:
+        song_name = args['song_name']
+
+    json_data = {}
+
+    json_data = cursor_to_json(training.demix(song_name))
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+#combine a checkpoint into a proper audio source and output it to the combos folder
+@app.route("/api/create_audio", methods=["GET"])
+def get_songs():
+    args = request.args
+    json_data = {}
+    
+    if args['song_name']:
+        song_name = args['song_name']
+    
+    if args['checkpoint_name']:
+        checkpoint_name = args['checkpoint_name']
+
     if song_name and checkpoint_name:
         json_data = cursor_to_json(combine.combine(song_name, checkpoint_name))
     else:

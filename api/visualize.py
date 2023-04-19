@@ -9,7 +9,6 @@ import librosa.display
 import os
 import api.defaults as defaults
 import io
-import html
 
 warnings.filterwarnings("ignore")
 
@@ -72,7 +71,7 @@ def visualize_and_embed_notebook(sources):
     plt.show()
     nussl.play_utils.multitrack(sources)
 
-def graph(sourcesg):
+def graph(sources):
     plt.figure(figsize=(10, 6))
     plt.subplot(211)
     nussl.utils.visualize_sources_as_masks(sources,
