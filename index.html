@@ -13,15 +13,25 @@
 </body>
 <script>
     async function fetchAudio() {
+        let audios = []
         const url = "http://localhost:8000/api/embeded_audio?combo_name=flowers.wav"
         let res = await fetch(url, {
             method: "GET"
         });
         const arr = await res.json();
-        const audios = arr;
-        console.log(audios);
+        audios = arr;
+        return audios
+    }
+
+    async function createPlayer() {
+        const audios = await fetchAudio();
+        for (const audio of Object.values(audios)) {
+            console.log("Trying to play " + audio['name'])
+            var audio_obj = new Audio(audio['audio']);
+            audio_obj.play();
+        }
     }
     
-    fetchAudio();
+    createPlayer();
 </script>
 </html>
