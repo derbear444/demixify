@@ -19,6 +19,64 @@ api_dir = os.path.join(curr_dir, 'api')
 checkpoint_dir = os.path.join(api_dir, 'checkpoints')
 combos_dir = os.path.join(api_dir, 'combos')
 
+def multitrack(audio_signals, names=None, ext='.mp3', display=True):
+    """
+    Takes a bunch of audio sources, converts them to mp3 to make them smaller, and
+    creates a multitrack audio player in the notebook that lets you
+    toggle between the sources and the mixture. Heavily adapted
+    from https://github.com/binarymind/multitrackHTMLPlayer,
+    designed by Bastien Liutkus.
+
+    Args:
+        audio_signals (list): List of AudioSignal objects that add up to the mixture.
+        names (list): List of names to give to each object (e.g. foreground, background).
+        ext (str): What extension to use when embedding. '.mp3' is more lightweight
+          leading to smaller notebook sizes.
+        display (bool): Whether or not to display the object immediately, or to return
+          the html object for display later by the end user.
+    """
+    ffmpy, IPython = nussl.core.play_utils._check_imports()
+    div_id = ''.join(nussl.core.play_utils.random.choice(nussl.core.play_utils.string.ascii_uppercase) for _ in range(20))
+    _names = None
+
+    if isinstance(audio_signals, dict):
+        _names = list(audio_signals.keys())
+        audio_signals = [audio_signals[k] for k in _names]
+
+    if names is not None:
+        if len(names) != len(audio_signals):
+            raise ValueError("len(names) must be equal to len(audio_signals)!")
+    else:
+        if _names is not None:
+            names = _names
+        else:
+            names = [
+                f"{i}:{s.path_to_input_file}"
+                for i, s in enumerate(audio_signals)
+            ]
+
+    template = (
+        f"<div id={div_id} class=audio-container "
+        f"preload=auto name={div_id}>")
+
+    for name, signal in zip(names, audio_signals):
+        encoded_audio = nussl.core.play_utils.embed_audio(signal, ext=ext, display=False).src_attr()
+        audio_element = (
+            f"<audio name='{name}'><source src='{encoded_audio}' type='audio/mp3'></audio>")
+        template += audio_element
+
+    template += "</div>"
+    template += nussl.core.play_utils.multitrack_template
+    template = template.replace('NAME', div_id)
+
+    html = IPython.display.HTML(template)
+    if display:
+        IPython.display.display(html)
+    else:
+        return html
+    
+nussl.core.play_utils.multitrack = multitrack
+
 def multiembed(audio_signals, names=None, ext='.mp3'):
     """
     Takes a bunch of audio sources, converts them to mp3 to make them smaller, and
@@ -85,7 +143,7 @@ def graph(sources):
     return bytes_image
 
 def audio(sources):
-    ret = nussl.play_utils.multiembed(sources, display=False)
+    ret = nussl.play_utils.multitrack(sources, display=False)
     return ret.data
 
 def embeded_audio(sources):

@@ -8,13 +8,25 @@
     <script source="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 </head>
 <body id="body">
-    <img src="http://localhost:8000/api/visualize?combo_name=so-much-for-stardust.wav" alt="" />
-    <section id="music"></section>
+    <!-- <img src="http://152.10.212.186:5000/api/visualize?combo_name=so-much-for-stardust.wav" alt="" /> -->
+    <!-- <section id="music"></section> -->
 </body>
 <script>
+
     async function fetchAudio() {
         let audios = []
-        const url = "http://localhost:8000/api/embeded_audio?combo_name=so-much-for-stardust.wav"
+        const url = "http://152.10.212.186:5000/api/audio?combo_name=so-much-for-stardust.wav"
+        let res = await fetch(url, {
+            method: "GET"
+        });
+        const html = await res.json();
+        const div = document.createElement('div');
+        div.innerHTML = html.trim();
+        document.body.appendChild(div);
+    }
+    async function fetchEmbededAudio() {
+        let audios = []
+        const url = "http://152.10.212.186:5000/api/embeded_audio?combo_name=so-much-for-stardust.wav"
         let res = await fetch(url, {
             method: "GET"
         });
@@ -24,7 +36,7 @@
     }
 
     async function createPlayer() {
-        const audios = await fetchAudio();
+        const audios = await fetchEmbededAudio();
         for (const audio of Object.values(audios)) {
             console.log("Trying to play " + audio['name'])
             var audio_obj = new Audio(audio['audio']);
@@ -32,6 +44,7 @@
         }
     }
     
-    createPlayer();
+    fetchAudio();
+    //createPlayer();
 </script>
 </html>
