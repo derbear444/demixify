@@ -7,8 +7,8 @@ export default defineNuxtConfig({
             apiBase: `${process.env.NUXT_PUBLIC_API_BASE_URL}/api`
         },
     },
-    modules: [    
-        '@nuxtjs/tailwindcss',    
-        '@nuxt/image-edge',  
+    modules: [
+        '@nuxtjs/tailwindcss',
+        '@nuxt/image-edge',
     ],
 })
