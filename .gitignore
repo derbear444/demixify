@@ -10,3 +10,4 @@ dist
 api/checkpoints
 api/combos
 api/__pycache__
+*.code-workspace
