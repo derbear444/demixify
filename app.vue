@@ -1,10 +1,10 @@
 <template>
   <div>
-    <NuxtWelcome />
     <NuxtLayout>
       <MultitrackAudioPlayer
         songTitle="So Much for Stardust"
-        :sources=audios
+        :sources="audios"
+        :source_names="names"
       />
     </NuxtLayout>
   </div>

@@ -62,7 +62,7 @@ def multitrack(audio_signals, names=None, ext='.mp3', display=True):
     for name, signal in zip(names, audio_signals):
         encoded_audio = nussl.core.play_utils.embed_audio(signal, ext=ext, display=False).src_attr()
         audio_element = (
-            f"<audio name='{name}'><source src='{encoded_audio}' type='audio/mp3'></audio>")
+            f"<audio name='{name}' controls><source src='{encoded_audio}' type='audio/mpeg'></audio>")
         template += audio_element
 
     template += "</div>"
@@ -75,7 +75,7 @@ def multitrack(audio_signals, names=None, ext='.mp3', display=True):
     else:
         return html
     
-nussl.core.play_utils.multitrack = multitrack
+#nussl.core.play_utils.multitrack = multitrack
 
 def multiembed(audio_signals, names=None, ext='.mp3'):
     """
