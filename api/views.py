@@ -8,8 +8,16 @@ import api.combining as combine
 import api.visualize as visualize
 import api.defaults as defaults
 import api.training as training
+import os
+from ytmusicapi import YTMusic
+from yt_dlp import YoutubeDL
 
 song_arr = defaults.SONG_LIST
+curr_dir = os.getcwd()
+api_dir = os.path.join(curr_dir, 'api')
+checkpoint_dir = os.path.join(api_dir, 'checkpoints')
+combos_dir = os.path.join(api_dir, 'combos')
+data_dir = os.path.join(api_dir, 'data')
 
 #default route
 @app.route('/')
@@ -24,6 +32,21 @@ def ping():
     json_data = json.loads(record)[0]
     return jsonify(pong=str(json_data))
 
+@app.route('/api/test', methods=['GET'])
+def test():
+    args = request.args
+    json_data = {}
+    
+    if args['song_name']:
+        song_name = args['song_name']
+
+    results = search_song(song_name)
+    json_data = cursor_to_json(download_song(results[0], results[1]))
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
 #get all current songs
 @app.route("/api/songs", methods=["GET"])
 def get_song_list():
@@ -31,6 +54,38 @@ def get_song_list():
 
     json_data = cursor_to_json(song_arr)
         
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+#does all the steps
+@app.route("/api/full", methods=["GET"])
+def generate_full_audio():
+    args = request.args
+    json_data = {}
+    
+    if args['song_name']:
+        song_name = args['song_name']
+
+    if song_name:
+        checkpoint_name = training.demix_with_checkpoint(song_name)
+        training.cleanup(song_name, checkpoint_name)
+        combo_name = combine.combine_with_combo(song_name, checkpoint_name)
+        json_data = cursor_to_json(visualize.generate_embeded_audio(combo_name))
+    else:
+        json_data = cursor_to_json("""No data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+#does all the steps
+@app.route("/api/combos", methods=["GET"])
+def get_combos():
+    json_data = {}
+
+    json_data = cursor_to_json(os.listdir(combos_dir))
+    
     resp = Response(json_data)
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
@@ -128,6 +183,40 @@ def get_songs():
     return resp
 
 #Extras-----------------------------------------------------------------------------
+
+def download_song(id, title):
+    data_name = ''
+
+    ydl_opts = {
+        'format': 'wav/bestaudio/best',
+        # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+        'postprocessors': [{  # Extract audio using ffmpeg
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+        }],
+        'paths': {
+            'home': "api/data",
+        },
+        'outtmpl': {
+            'default': "%(id)s",
+        },
+    }
+    urls = ["https://www.youtube.com/watch?v=%s" %(id)]
+    
+
+    with YoutubeDL(ydl_opts) as ydl:
+        error_code = ydl.download(urls)
+
+    return error_code
+
+def search_song(song_name):
+    yt = YTMusic()
+    query = song_name
+    topResult = yt.search(query)[0]
+    videoId = topResult["videoId"]
+    videoTitle = topResult['title']
+    videoArtist = topResult['artists'][0]['name']
+    return videoId, videoTitle, videoArtist
 
 def bytes_to_base64(img_bytes):
     return base64.b64encode(img_bytes).decode('utf-8')
