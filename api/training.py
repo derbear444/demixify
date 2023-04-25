@@ -7,6 +7,7 @@ import torch
 import os
 import api.defaults as defaults
 import librosa
+import re
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = 'max_split_size_mb:32000'
 
@@ -21,8 +22,9 @@ combos_dir = os.path.join(api_dir, 'combos')
 data_dir = os.path.join(api_dir, 'data')
 
 Fs = defaults.SAMPLE_RATE
-checkpoint = False
-#filename = 'so-much-for-stardust.wav'
+NUM_SOURCES = defaults.NUM_SOURCES
+NUM_ITERATIONS = defaults.NUM_ITERATIONS
+checkpoint = True
 
 def run(self):
         P, Q = self.initialize_parameters()
@@ -118,7 +120,7 @@ def demix(filename):
             
             DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
             separator = nussl.separation.spatial.Projet(
-                curr_mix, num_sources=6, device=DEVICE, num_iterations=600)
+                curr_mix, num_sources=NUM_SOURCES, device=DEVICE, num_iterations=NUM_ITERATIONS)
 
             estimates = separator()
 
@@ -140,19 +142,31 @@ def demix_with_checkpoint(filename):
     fn_wav_X = os.path.join(data_dir, filename)
 
     final_ests = []
-    # if checkpoint:
-    #     checkpoint_name = '%s-checkpoint-13.npy' %(filename)
-    #     with open(os.path.join(checkpoint_dir, checkpoint_name), 'rb') as f:
-    #         final_ests = np.load(f, allow_pickle=True)
+    checkpoint_name = ''
+    if checkpoint:
+        checkpoint_nums = []
+        # Loops through all checkpoints that match the filename
+        for fname in os.listdir(checkpoint_dir):
+            if fname.startswith(filename):
+                m = re.search(r'(.*)-checkpoint-(\d+).npy', fname)
+                if m:
+                    checkpoint_nums.append(int(m.group(2)))
+        if len(checkpoint_nums) != 0:
+            # Gets the latest checkpoint recorded and loads it
+            checkpoint_name = '%s-checkpoint-%d.npy' %(filename, max(checkpoint_nums))
+            with open(os.path.join(checkpoint_dir, checkpoint_name), 'rb') as f:
+                final_ests = np.load(f, allow_pickle=True)
+            print(f'Resuming with checkpoint: {checkpoint_name}')
 
     audio_data_array, Fs = librosa.load(fn_wav_X, mono=False, sr=None)
 
     # Split audio into 10-second segments
     duration = defaults.SPLIT_DURATION * Fs # duration of each segment in seconds
     length = audio_data_array.shape[1]
-    print(f'Number of splits necessary: {np.floor(length/duration)}')
-    segments = final_ests.tolist() if checkpoint else []
-    checkpoint_start = len(segments)-1 if checkpoint else 0
+    max_splits = np.floor(length/duration)
+    print(f'Number of splits necessary: {max_splits}')
+    segments = final_ests.tolist() if checkpoint_name else []
+    checkpoint_start = len(segments)-1 if checkpoint_name else 0
     last_checkpoint_name = ""
 
     for i, start in enumerate(range(0, length, duration)):
@@ -160,19 +174,27 @@ def demix_with_checkpoint(filename):
             end = min(start + duration, length)
             segment = audio_data_array[:, start:end]
             
-            curr_mix = nussl.AudioSignal(audio_data_array=segment, sample_rate=Fs)
-            
-            DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-            separator = nussl.separation.spatial.Projet(
-                curr_mix, num_sources=6, device=DEVICE, num_iterations=600)
+            try:
+                curr_mix = nussl.AudioSignal(audio_data_array=segment, sample_rate=Fs)
+                
+                DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+                separator = nussl.separation.spatial.Projet(
+                    curr_mix, num_sources=6, device=DEVICE, num_iterations=600)
 
-            estimates = separator()
+                estimates = separator()
 
-            segments.append(estimates)
+                segments.append(estimates)
 
-            last_checkpoint_name = "%s-checkpoint-%d.npy" %(filename, i)
-            with open(os.path.join(checkpoint_dir, last_checkpoint_name), 'wb') as f:
-                np.save(f, np.array(segments), allow_pickle=True)
+                last_checkpoint_name = "%s-checkpoint-%d.npy" %(filename, i)
+                with open(os.path.join(checkpoint_dir, last_checkpoint_name), 'wb') as f:
+                    np.save(f, np.array(segments), allow_pickle=True)
+
+                print("Progress: Split %d/%d" %(i, max_splits))
+            except nussl.core.audio_signal.AudioSignalException:
+                print("Uneven split on last segment detected.")
+                print("Using last good checkpoint instead.")
+                last_checkpoint_name = last_checkpoint_name if last_checkpoint_name else checkpoint_name
+                print(f'Checkpoint: {last_checkpoint_name}')
 
     end_time = time.time()
     time_taken = end_time - start_time

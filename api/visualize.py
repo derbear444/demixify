@@ -192,8 +192,8 @@ def generate_audio(song_name):
 
 def generate_embeded_audio(song_name):
 
-    if song_name not in defaults.SONG_LIST:
-        return "Request song not in database."
+    # if song_name not in defaults.SONG_LIST:
+    #     return "Request song not in database."
     
     start_time = time.time()
 

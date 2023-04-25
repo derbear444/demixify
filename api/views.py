@@ -73,7 +73,7 @@ def generate_full_audio():
         checkpoint_name = training.demix_with_checkpoint(wav_name)
         training.cleanup(wav_name, checkpoint_name)
         combo_name = combine.combine_with_combo(wav_name, checkpoint_name)
-        json_data = cursor_to_json(visualize.generate_embeded_audio(combo_name))
+        json_data = cursor_to_json(visualize.generate_embeded_audio(wav_name))
     else:
         json_data = cursor_to_json("""No data provided!""")
         

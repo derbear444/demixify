@@ -58,8 +58,8 @@ def combine(song_name, checkpoint_name):
 
 def combine_with_combo(song_name, checkpoint_name):
 
-    if song_name not in defaults.SONG_LIST:
-        return "Request song not in database."
+    # if song_name not in defaults.SONG_LIST:
+    #     return "Request song not in database."
     
     start_time = time.time()
     
