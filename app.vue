@@ -46,9 +46,8 @@ export default {
       const comboString = `${this.text}.wav-combined.npy`;
       const check = combos.includes(comboString);
 
-      let sourcesArr = []
       if (check) {
-        sourcesArr = this.sendLimitedData(this.text).then((data) => {
+        this.sendLimitedData(this.text).then((data) => {
           console.log(data)
           if (typeof data != "string") {
             this.names = data.map((source) => source.name);
@@ -57,7 +56,7 @@ export default {
         });
       }
       else {
-        sourcesArr = await this.sendData(this.text).then((data) => {
+        await this.sendData(this.text).then((data) => {
           console.log(data)
           if (typeof data != "string") {
             this.names = data.map((source) => source.name);

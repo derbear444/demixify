@@ -68,9 +68,11 @@ def generate_full_audio():
         song_name = args['song_name']
 
     if song_name:
-        checkpoint_name = training.demix_with_checkpoint(song_name)
-        training.cleanup(song_name, checkpoint_name)
-        combo_name = combine.combine_with_combo(song_name, checkpoint_name)
+        results = search_song(song_name)
+        wav_name = download_song(results[0], results[1])
+        checkpoint_name = training.demix_with_checkpoint(wav_name)
+        training.cleanup(wav_name, checkpoint_name)
+        combo_name = combine.combine_with_combo(wav_name, checkpoint_name)
         json_data = cursor_to_json(visualize.generate_embeded_audio(combo_name))
     else:
         json_data = cursor_to_json("""No data provided!""")
@@ -185,8 +187,6 @@ def get_songs():
 #Extras-----------------------------------------------------------------------------
 
 def download_song(id, title):
-    data_name = ''
-
     ydl_opts = {
         'format': 'wav/bestaudio/best',
         # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
@@ -198,7 +198,7 @@ def download_song(id, title):
             'home': "api/data",
         },
         'outtmpl': {
-            'default': "%(id)s",
+            'default': title,
         },
     }
     urls = ["https://www.youtube.com/watch?v=%s" %(id)]
@@ -207,7 +207,8 @@ def download_song(id, title):
     with YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download(urls)
 
-    return error_code
+    filename ='%s.wav' %(title)
+    return filename
 
 def search_song(song_name):
     yt = YTMusic()
