@@ -70,9 +70,14 @@ def generate_full_audio():
     if song_name:
         results = search_song(song_name)
         wav_name = download_song(results[0], results[1])
-        checkpoint_name = training.demix_with_checkpoint(wav_name)
-        training.cleanup(wav_name, checkpoint_name)
-        combo_name = combine.combine_with_combo(wav_name, checkpoint_name)
+
+        combo_list = get_combos_headless()
+        print(combo_list)
+        combos = '\t'.join(combo_list)
+        if wav_name not in combos:
+            checkpoint_name = training.demix_with_checkpoint(wav_name)
+            training.cleanup(wav_name, checkpoint_name)
+            combo_name = combine.combine_with_combo(wav_name, checkpoint_name)
         json_data = cursor_to_json(visualize.generate_embeded_audio(wav_name))
     else:
         json_data = cursor_to_json("""No data provided!""")
@@ -185,6 +190,9 @@ def get_songs():
     return resp
 
 #Extras-----------------------------------------------------------------------------
+
+def get_combos_headless():
+    return os.listdir(combos_dir)
 
 def download_song(id, title):
     ydl_opts = {

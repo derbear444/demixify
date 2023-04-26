@@ -48,7 +48,6 @@ export default {
 
       if (check) {
         this.sendLimitedData(this.text).then((data) => {
-          console.log(data)
           if (typeof data != "string") {
             this.names = data.map((source) => source.name);
             this.audios = data.map((source) => source.audio);
@@ -57,7 +56,6 @@ export default {
       }
       else {
         await this.sendData(this.text).then((data) => {
-          console.log(data)
           if (typeof data != "string") {
             this.names = data.map((source) => source.name);
             this.audios = data.map((source) => source.audio);

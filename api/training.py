@@ -179,7 +179,7 @@ def demix_with_checkpoint(filename):
                 
                 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
                 separator = nussl.separation.spatial.Projet(
-                    curr_mix, num_sources=6, device=DEVICE, num_iterations=600)
+                    curr_mix, num_sources=NUM_SOURCES, device=DEVICE, num_iterations=NUM_ITERATIONS)
 
                 estimates = separator()
 
