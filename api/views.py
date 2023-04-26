@@ -72,7 +72,6 @@ def generate_full_audio():
         wav_name = download_song(results[0], results[1])
 
         combo_list = get_combos_headless()
-        print(combo_list)
         combos = '\t'.join(combo_list)
         if wav_name not in combos:
             checkpoint_name = training.demix_with_checkpoint(wav_name)

@@ -31,8 +31,6 @@ def run(self):
         for i in range(self.num_iterations):
             P, Q = self._update(P, Q)
 
-        print(torch.cuda.memory_summary(device=None, abbreviated=False))
-
         KQ = self._get_kq(Q)
         KQ = KQ.reshape(KQ.shape[0], -1, 1, KQ.shape[-1])
         sigma_j = KQ * P[:, None, ...]
@@ -100,8 +98,10 @@ def demix(filename):
         checkpoint_name = '%s-checkpoint-13.npy' %(filename)
         with open(os.path.join(checkpoint_dir, checkpoint_name), 'rb') as f:
             final_ests = np.load(f, allow_pickle=True)
-
+    # Loads song first time to grab sample rate
     audio_data_array, Fs = librosa.load(fn_wav_X, mono=False, sr=None)
+    # Loads again based on half the sample rate
+    audio_data_array, Fs = librosa.load(fn_wav_X, mono=False, sr=Fs/2)
 
     # Split audio into 10-second segments
     duration = defaults.SPLIT_DURATION * Fs # duration of each segment in seconds
