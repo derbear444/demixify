@@ -1,6 +1,8 @@
 <template>
   <div class="bg-gray-900 text-white rounded-md p-4">
     <h2 class="text-2xl font-bold mb-4">{{ songTitle }}</h2>
+    <SeekBar @seek="updateSeek" />
+    <br>
     <div class="flex items-center mb-4">
       <button @click="togglePlay" class="mr-4">
         <svg v-if="isPlaying" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,6 +27,8 @@
           </svg>
           {{ track.name }}
         </label>
+        <input type="range" min="0" max="1" step="0.01" v-model="track.volume"
+          @input="updateVolume(index, track.volume)" />
       </div>
     </div>
   </div>
@@ -63,6 +67,7 @@ export default defineComponent({
         src: source,
         html5: true,
         preload: true,
+        volume: 0.5,
       });
     });
 
@@ -70,6 +75,7 @@ export default defineComponent({
     this.tracks = this.source_names.map((name, index) => ({
       name: name,
       muted: false,
+      volume: 0.5,
     }));
   },
   methods: {
@@ -77,6 +83,7 @@ export default defineComponent({
       if (this.isPlaying) {
         this.howls.forEach((howl) => {
           howl.pause();
+          this.isPlaying = false;
           howl.off('play');
           howl.off('end');
         });
@@ -93,12 +100,19 @@ export default defineComponent({
           });
           howl.on('end', () => {
             if (this.isPlaying) {
-              this.isPlaying = false;
               this.togglePlay();
             }
           });
         });
       }
+    },
+    updateVolume(idx, value) {
+      this.howls[idx].volume(value);
+    },
+    updateSeek(position) {
+      this.howls.forEach((howl) => {
+        howl.seek(howl.duration() * (position / 100));
+      });
     },
   },
   watch: {
