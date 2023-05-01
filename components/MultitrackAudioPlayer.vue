@@ -83,10 +83,10 @@ export default defineComponent({
       if (this.isPlaying) {
         this.howls.forEach((howl) => {
           howl.pause();
-          this.isPlaying = false;
           howl.off('play');
           howl.off('end');
         });
+        this.isPlaying = false;
       } else {
         let counter = 0;
         const total = this.howls.length;
