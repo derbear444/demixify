@@ -1,5 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+    devServer: {
+        port: 8000
+    },
     runtimeConfig: {
         title: 'Demixify',
         // Public keys that are exposed to the client
