@@ -1,35 +1,59 @@
 <template>
-  <div>
-    <div class="relative flex items-center">
-      <div class="h-1 w-full bg-gray-600 rounded-full">
-        <div class="absolute h-1 top-0 bg-green-500 rounded-full" :style="{ width: `${progress}%` }"></div>
-        <input class="appearance-none w-full h-full rounded-full focus:outline-none" type="range" min="0.0" max="100.0"
-          step="0.1" v-model.number="progress" @mousedown="isDragging = true" @mousemove="updateProgress"
-          @mouseup="isDragging = false" />
-      </div>
-    </div>
+  <div class="seek-bar">
+    <input type="range" min="0" max="100" step="1" v-model="progress">
+    <span>{{ currentTime }}</span>
   </div>
 </template>
-  
+
 <script>
+import { ref, computed, onMounted } from "vue";
+import * as Tone from "tone";
+
 export default {
-  data() {
+  name: "SeekBar",
+  setup() {
+    const progress = ref(0);
+
+    const currentTime = computed(() => {
+      const currentTimeInSec = Tone.Transport.seconds;
+      const durationInSec = Tone.Transport.loopEnd;
+      const currentTimeFormatted = formatTime(currentTimeInSec);
+      const durationFormatted = formatTime(durationInSec);
+      return `${currentTimeFormatted} / ${durationFormatted}`;
+    });
+
+    function formatTime(timeInSec) {
+      const minutes = Math.floor(timeInSec / 60);
+      const seconds = Math.floor(timeInSec % 60);
+      return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+    }
+
+    onMounted(() => {
+      setInterval(() => {
+        progress.value = (Tone.Transport.seconds / Tone.Transport.loopEnd) * 100;
+      }, 1000);
+    });
+
     return {
-      isDragging: false,
-      progress: 0,
+      progress,
+      currentTime,
     };
   },
-  methods: {
-    updateProgress(event) {
-      if (this.isDragging) {
-        const width = event.target.clientWidth;
-        const clickX = event.offsetX;
-        const percent = clickX / width;
-        const newPosition = percent * 100;
-        this.progress = newPosition;
-        this.$emit('seek', newPosition);
-      }
-    },
-  },
 };
-</script> 
+</script>
+
+<style scoped>
+.seek-bar {
+  display: flex;
+  align-items: center;
+}
+
+.seek-bar input {
+  width: 100%;
+  margin-right: 1rem;
+}
+
+.seek-bar span {
+  font-size: 0.8rem;
+}
+</style>

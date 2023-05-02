@@ -1,6 +1,6 @@
 <template>
   <div class="bg-gray-900 text-white rounded-md p-4">
-    <h2 class="text-2xl font-bold mb-4">{{ songTitle }}</h2>
+    <h2 class="text-2xl font-bold mb-4">{{ songTitle.toUpperCase() }}</h2>
     <SeekBar @seek="updateSeek" />
     <br>
     <div class="flex items-center mb-4">
@@ -27,8 +27,9 @@
           </svg>
           {{ track.name }}
         </label>
-        <input type="range" min="0" max="1" step="0.01" v-model="track.volume"
+        <input type="range" min="-60" max="60" step="0.1" v-model="track.volume"
           @input="updateVolume(index, track.volume)" />
+        <canvas ref="canvas"></canvas>
       </div>
     </div>
   </div>
@@ -37,6 +38,7 @@
 <script>
 import { defineComponent } from "vue";
 import { Howl } from "howler";
+import * as Tone from 'tone'
 
 export default defineComponent({
   props: {
@@ -58,61 +60,106 @@ export default defineComponent({
       isPlaying: false,
       tracks: [],
       howls: [],
-    };
+      currentTime: 0,
+    }
   },
-  mounted() {
-    // Create Howl instances
-    this.howls = this.sources.map((source) => {
-      return new Howl({
-        src: source,
-        html5: true,
-        preload: true,
-        volume: 0.5,
-      });
-    });
+  created() {
+    // Create players with specified options
+    const options = {
+      urls: this.sources.reduce((obj, src, i) => {
+        obj[this.source_names[i]] = src;
+        return obj;
+      }, {}),
+      onload: () => console.log("Loading done")
+    }
+    const ps = new Tone.Players(options).toDestination();
+    // Set players' volume
+    ps.volume.value = 1; // adjust volume level here
+
+    this.players = ps;
 
     // Initialize tracks array
     this.tracks = this.source_names.map((name, index) => ({
       name: name,
       muted: false,
-      volume: 0.5,
+      volume: 1,
     }));
+
+    // // Create an analyser node that makes a waveform
+    // const wf = new Tone.Waveform(128).toDestination();
+
+    // // Connect with analyser as well so we can detect waveform
+    // this.players.connect(wf);
+
+    // this.waveform = wf;
+
+    // create a Waveform object for each track
+    // this.waveforms = this.tracks.map((track) => {
+    //   const waveform = new Tone.Waveform(512);
+    //   this.players.player(track.name).connect(waveform);
+    //   return waveform;
+    // });
+
+    // // draw the waveforms on the canvas element
+    // this.drawWaveforms();
+
+    // Tone.start()
   },
   methods: {
     togglePlay() {
-      if (this.isPlaying) {
-        this.howls.forEach((howl) => {
-          howl.pause();
-          howl.off('play');
-          howl.off('end');
-        });
-        this.isPlaying = false;
-      } else {
-        let counter = 0;
-        const total = this.howls.length;
-        this.howls.forEach((howl) => {
-          howl.play();
-          howl.on('play', () => {
-            counter++;
-            if (counter === total) {
-              this.isPlaying = true;
-            }
-          });
-          howl.on('end', () => {
-            if (this.isPlaying) {
-              this.togglePlay();
-            }
-          });
-        });
+      if (this.players.loaded) {
+        if (this.isPlaying) {
+          this.currentTime = Tone.Transport.seconds
+          console.log(this.currentTime)
+          this.players.stopAll();
+          this.isPlaying = false;
+        } else {
+          this.source_names.forEach((source) => {
+            this.players.player(source).start(this.currentTime);
+          })
+          this.isPlaying = true;
+        }
       }
     },
     updateVolume(idx, value) {
-      this.howls[idx].volume(value);
+      // Update specific player's volume
+      this.players.player(this.source_names[idx]).volume.value = value;
     },
     updateSeek(position) {
-      this.howls.forEach((howl) => {
-        howl.seek(howl.duration() * (position / 100));
+      // Update all players' playback position
+      this.source_names.forEach((source) => {
+        let player = this.players.player(source);
+        let duration = player.duration
+        player.seek(duration * (position / 100));
       });
+    },
+    drawWaveforms() {
+      const canvas = this.$refs.canvas;
+      const ctx = canvas.getContext('2d');
+
+      // clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // set the canvas dimensions
+      canvas.width = this.$el.clientWidth;
+      canvas.height = 100 * this.tracks.length;
+
+      // draw each waveform on the canvas
+      this.waveforms.forEach((waveform, i) => {
+        ctx.strokeStyle = `rgba(255, 255, 255, ${this.tracks[i].muted ? 0.5 : 1})`;
+        ctx.beginPath();
+        waveform.toCanvas(canvas, {
+          stroke: true,
+          strokeWidth: 2,
+          color: ctx.strokeStyle,
+          height: 100,
+          offsetY: i * 100
+        });
+        ctx.closePath();
+      });
+
+      // schedule the next redraw
+      requestAnimationFrame(this.drawWaveforms);
     },
   },
   watch: {
@@ -120,8 +167,8 @@ export default defineComponent({
       handler(tracks) {
         // Mute or unmute tracks
         tracks.forEach((track, index) => {
-          const howl = this.howls[index];
-          howl.mute(track.muted);
+          const player = this.players.player(this.source_names[index]);
+          player.mute = track.muted;
         });
       },
       deep: true,
