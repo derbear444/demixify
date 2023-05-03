@@ -1,7 +1,7 @@
 <template>
   <div class="bg-gray-900 text-white rounded-md p-4">
     <h2 class="text-2xl font-bold mb-4">{{ songTitle.toUpperCase() }}</h2>
-    <SeekBar @seek="updateSeek" />
+    <SeekBar @seek="updateSeek" :givenTime="currentTime" :songDuration="songDuration" />
     <br>
     <div class="flex items-center mb-4">
       <button @click="togglePlay" class="mr-4">
@@ -12,7 +12,9 @@
           <path d="M5 3v18l13-9L5 3z"></path>
         </svg>
       </button>
-      <div v-for="(track, index) in tracks" :key="index" class="mr-4">
+      <input type="range" min="-60" max="60" step="0.1" v-model="master_volume"
+        @input="updateMasterVolume(master_volume)" />
+      <div v-for="(track, index) in tracks" :key="index" class="mr-5">
         <label class="flex items-center cursor-pointer">
           <input type="checkbox" v-model="track.muted" class="sr-only" />
           <svg v-if="track.muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -37,7 +39,6 @@
   
 <script>
 import { defineComponent } from "vue";
-import { Howl } from "howler";
 import * as Tone from 'tone'
 
 export default defineComponent({
@@ -60,62 +61,78 @@ export default defineComponent({
       isPlaying: false,
       tracks: [],
       howls: [],
+      pauseTime: 0,
       currentTime: 0,
+      master_volume: 0,
+      songDuration: 0,
     }
   },
-  created() {
-    // Create players with specified options
-    const options = {
-      urls: this.sources.reduce((obj, src, i) => {
-        obj[this.source_names[i]] = src;
-        return obj;
-      }, {}),
-      onload: () => console.log("Loading done")
-    }
-    const ps = new Tone.Players(options).toDestination();
-    // Set players' volume
-    ps.volume.value = 1; // adjust volume level here
+  mounted() {
+    // Run setup code
+    this.setup();
 
-    this.players = ps;
-
-    // Initialize tracks array
-    this.tracks = this.source_names.map((name, index) => ({
-      name: name,
-      muted: false,
-      volume: 1,
-    }));
-
-    // // Create an analyser node that makes a waveform
-    // const wf = new Tone.Waveform(128).toDestination();
-
-    // // Connect with analyser as well so we can detect waveform
-    // this.players.connect(wf);
-
-    // this.waveform = wf;
-
-    // create a Waveform object for each track
-    // this.waveforms = this.tracks.map((track) => {
-    //   const waveform = new Tone.Waveform(512);
-    //   this.players.player(track.name).connect(waveform);
-    //   return waveform;
-    // });
-
-    // // draw the waveforms on the canvas element
-    // this.drawWaveforms();
-
-    // Tone.start()
+    // Terrible way, but potentially the only way
+    setInterval(() => {
+      this.currentTime = Tone.Transport.seconds;
+    }, 1);
   },
   methods: {
+    setup() {
+      // Create players with specified options
+      const options = {
+        urls: this.sources.reduce((obj, src, i) => {
+          obj[this.source_names[i]] = src;
+          return obj;
+        }, {}),
+        onload: () => {
+          console.log("Song loaded!")
+        },
+      }
+      const ps = new Tone.Players(options).toDestination();
+      // Set players' volume
+      ps.volume.value = 1;
+
+      this.players = ps;
+
+      // Initialize tracks array
+      this.tracks = this.source_names.map((name, index) => ({
+        name: name,
+        muted: false,
+        volume: 1,
+      }));
+
+      // Create an analyser node that makes a waveform
+      const wf = new Tone.Waveform(128).toDestination();
+
+      // Connect with analyser as well so we can detect waveform
+      this.players.connect(wf);
+
+      this.waveform = wf;
+
+      // create a Waveform object for each track
+      // this.waveforms = this.tracks.map((track) => {
+      //   const waveform = new Tone.Waveform(512);
+      //   this.players.player(track.name).connect(waveform);
+      //   return waveform;
+      // });
+
+      // // draw the waveforms on the canvas element
+      // this.drawWaveforms();
+
+      // Tone.start()
+    },
     togglePlay() {
       if (this.players.loaded) {
         if (this.isPlaying) {
-          this.currentTime = Tone.Transport.seconds
-          console.log(this.currentTime)
+          this.pauseTime = Tone.Transport.seconds;
+          Tone.Transport.pause()
           this.players.stopAll();
           this.isPlaying = false;
         } else {
+          Tone.Transport.start()
+          this.songDuration = this.players.player(this.source_names[0]).buffer.duration
           this.source_names.forEach((source) => {
-            this.players.player(source).start(this.currentTime);
+            this.players.player(source).start(0, this.pauseTime);
           })
           this.isPlaying = true;
         }
@@ -125,13 +142,16 @@ export default defineComponent({
       // Update specific player's volume
       this.players.player(this.source_names[idx]).volume.value = value;
     },
+    updateMasterVolume(value) {
+      this.players.volume.value = value;
+    },
     updateSeek(position) {
       // Update all players' playback position
       this.source_names.forEach((source) => {
-        let player = this.players.player(source);
-        let duration = player.duration
-        player.seek(duration * (position / 100));
+        this.players.player(source).seek(position);
       });
+      Tone.Transport.seconds = position;
+      this.pauseTime = position;
     },
     drawWaveforms() {
       const canvas = this.$refs.canvas;
@@ -172,6 +192,19 @@ export default defineComponent({
         });
       },
       deep: true,
+    },
+  },
+  sources: {
+    handler() {
+      // Zero everything back out
+      this.currentTime = 0;
+      this.pauseTime = 0;
+      this.master_volume = 0;
+      // Reset timer and stop player if its running
+      Tone.Transport.stop();
+      this.players.stopAll();
+      // Rerun setup code
+      this.setup();
     },
   },
 });
