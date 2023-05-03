@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@nuxtjs/eslint-module": "^4.0.2",
+    "audiobuffer-to-wav": "^1.0.0",
     "howler": "^2.2.3",
     "tone": "^14.7.77"
   }
