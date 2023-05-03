@@ -206,7 +206,7 @@ export default defineComponent({
         console.log("Attempting download...");
         await this.downloadMidis().then((data) => {
           console.log("Successfully zipped midi")
-          console.log(data)
+          const path = data
         }).catch((err) => {
           console.log(err)
         });
@@ -226,17 +226,16 @@ export default defineComponent({
             body: formData,
           }
         );
-        fetch(`api/midi/${zipName}`)
-          .then((response) => response.blob())
+        await $fetch(`http://152.10.212.186:5000/api/midi?zip_name=${zipName}`)
           .then((blob) => {
             this.downloadBlob(blob, zipName)
           })
-          // .then(() => {
-          //   $fetch(`http://152.10.212.186:5000/api/midi?filename=${filename}`,
-          //     {
-          //       method: 'DELETE',
-          //     });
-          // })
+          .then(() => {
+            $fetch(`http://152.10.212.186:5000/api/midi?filename=${filename}`,
+              {
+                method: 'DELETE',
+              });
+          })
           .catch((err) => {
             console.log(err)
           });

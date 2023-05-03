@@ -30,6 +30,13 @@ def delete_temps(filename):
         if fname.startswith(filename):
             os.remove(os.path.join(midi_dir, fname))
 
+# get zip
+def get_zip(zip_name):
+    for fname in os.listdir(midi_dir):
+        if fname == zip_name:
+            with open(os.path.join(midi_dir, fname), 'rb') as midi:
+                return midi.read()
+
 # zips needed files into archive
 def zip_midis(filename, zip_name):
     files_to_zip = [f for f in os.listdir(midi_dir) if f.startswith(filename)]

@@ -12,6 +12,7 @@ import api.midi as midi
 import os
 from ytmusicapi import YTMusic
 from yt_dlp import YoutubeDL
+import io
 
 song_arr = defaults.SONG_LIST
 curr_dir = os.getcwd()
@@ -184,6 +185,33 @@ def get_songs():
         json_data = cursor_to_json(combine.combine(song_name, checkpoint_name))
     else:
         json_data = cursor_to_json("""No data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+#get specific zip file
+@app.route("/api/midi", methods=["GET"])
+def get_midi():
+    args = request.args
+    json_data = {}
+    
+    if args['zip_name']:
+        zip_name = args['zip_name']
+
+    if zip_name:
+        # Get contents of file with the given zip name
+        file_contents = midi.get_zip(zip_name)
+
+        # Send contents of file as a file attachment to the frontend
+        return send_file(
+            io.BytesIO(file_contents),
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=zip_name
+        )
+    else:
+        json_data = cursor_to_json("""No or incomplete data provided!""")
         
     resp = Response(json_data)
     resp.headers['Access-Control-Allow-Origin'] = '*'
