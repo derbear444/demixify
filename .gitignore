@@ -11,5 +11,6 @@ api/checkpoints
 api/combos
 api/data
 api/__pycache__
+api/midi
 *.code-workspace
 .vscode
