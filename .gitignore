@@ -12,5 +12,6 @@ api/combos
 api/data
 api/__pycache__
 api/midi
+api/wav_midi
 *.code-workspace
 .vscode
