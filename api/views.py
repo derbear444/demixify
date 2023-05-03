@@ -8,6 +8,7 @@ import api.combining as combine
 import api.visualize as visualize
 import api.defaults as defaults
 import api.training as training
+import api.midi as midi
 import os
 from ytmusicapi import YTMusic
 from yt_dlp import YoutubeDL
@@ -183,6 +184,57 @@ def get_songs():
         json_data = cursor_to_json(combine.combine(song_name, checkpoint_name))
     else:
         json_data = cursor_to_json("""No data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+#send sound array to python to save
+@app.route("/api/midi", methods=["POST"])
+def post_for_midi():
+
+    blob = request.files['blob']
+    filename = request.form.get('filename', "")
+    sample_rate = request.form.get('sample_rate', defaults.SAMPLE_RATE)
+
+    if blob and filename and sample_rate:
+        json_data = cursor_to_json(midi.savefile(blob.read(), filename, sample_rate))
+    else:
+        json_data = cursor_to_json("""No or incomplete data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+# cleans up files related to filename from the midi process
+@app.route("/api/midi", methods=["DELETE"])
+def cleanup_midi():
+    args = request.args
+    json_data = {}
+
+    if args['filename']:
+        filename = args['filename']
+
+    if filename:
+        json_data = cursor_to_json(midi.delete_temps(filename))
+    else:
+        json_data = cursor_to_json("""No or incomplete data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+# cleans up files related to filename from the midi process
+@app.route("/api/midi", methods=["PUT"])
+def zip_midi():
+
+    filename = request.form.get('filename', "")
+    zipname = request.form.get('zipname', "")
+
+    if filename and zipname:
+        json_data = cursor_to_json(midi.zip_midis(filename, zipname))
+    else:
+        json_data = cursor_to_json("""No or incomplete data provided!""")
         
     resp = Response(json_data)
     resp.headers['Access-Control-Allow-Origin'] = '*'
