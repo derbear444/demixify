@@ -73,7 +73,15 @@ export default defineComponent({
 
     // Terrible way, but potentially the only way
     setInterval(() => {
-      this.currentTime = Tone.Transport.seconds;
+      if (this.currentTime >= this.songDuration) {
+        // Reset timer and stop player if its running
+        Tone.Transport.stop();
+        this.players.stopAll();
+        this.isPlaying = false;
+        this.currentTime = this.songDuration;
+      } else {
+        this.currentTime = Tone.Transport.seconds;
+      }
     }, 1);
   },
   methods: {
@@ -122,6 +130,11 @@ export default defineComponent({
       // Tone.start()
     },
     togglePlay() {
+      if (this.currentTime >= this.songDuration) {
+        this.currentTime = 0;
+        this.pauseTime = 0;
+      }
+
       if (this.players.loaded) {
         if (this.isPlaying) {
           this.pauseTime = Tone.Transport.seconds;
@@ -193,19 +206,20 @@ export default defineComponent({
       },
       deep: true,
     },
-  },
-  sources: {
-    handler() {
-      // Zero everything back out
-      this.currentTime = 0;
-      this.pauseTime = 0;
-      this.master_volume = 0;
-      // Reset timer and stop player if its running
-      Tone.Transport.stop();
-      this.players.stopAll();
-      // Rerun setup code
-      this.setup();
+    sources: {
+      handler() {
+        // Zero everything back out
+        this.currentTime = 0;
+        this.pauseTime = 0;
+        this.master_volume = 0;
+        // Reset timer and stop player if its running
+        Tone.Transport.stop();
+        this.players.stopAll();
+        this.isPlaying = false;
+        // Rerun setup code
+        this.setup();
+      },
     },
-  },
+  }
 });
 </script>
