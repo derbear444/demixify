@@ -14,7 +14,7 @@
       </button>
       <input type="range" min="-60" max="60" step="0.1" v-model="master_volume"
         @input="updateMasterVolume(master_volume)" />
-      <div v-for="(track, index) in tracks" :key="index" class="mr-5">
+      <div v-for="(track, index) in tracks" :key="index" class="mr-1">
         <label class="flex items-center cursor-pointer">
           <input type="checkbox" v-model="track.muted" class="sr-only" />
           <svg v-if="track.muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -33,13 +33,21 @@
           @input="updateVolume(index, track.volume)" />
         <canvas ref="canvas"></canvas>
       </div>
+      <button :class="{ 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-wait': saving }"
+        :disabled="saving" @click="saveWavFiles"><span v-if="!saving">Save File</span>
+        <span v-else>
+          <svg class="animate-spin h-5 w-5 mr-3"></svg>
+          Saving...
+        </span>
+      </button>
     </div>
   </div>
 </template>
   
 <script>
 import { defineComponent } from "vue";
-import * as Tone from 'tone'
+import * as Tone from 'tone';
+import audioBufferToWav from 'audiobuffer-to-wav'
 
 export default defineComponent({
   props: {
@@ -65,6 +73,7 @@ export default defineComponent({
       currentTime: 0,
       master_volume: 0,
       songDuration: 0,
+      saving: false,
     }
   },
   mounted() {
@@ -92,9 +101,6 @@ export default defineComponent({
           obj[this.source_names[i]] = src;
           return obj;
         }, {}),
-        onload: () => {
-          console.log("Song loaded!")
-        },
       }
       const ps = new Tone.Players(options).toDestination();
       // Set players' volume
@@ -165,6 +171,88 @@ export default defineComponent({
       });
       Tone.Transport.seconds = position;
       this.pauseTime = position;
+    },
+    async saveWavFiles() {
+      this.saving = true;
+      const promises = this.source_names.map(async (source) => {
+        const player = this.players.player(source);
+        const buffer = player.buffer;
+
+        const wav = audioBufferToWav(buffer)
+        const blob = new Blob([wav], { type: 'audio/wav' });
+
+        let formData = new FormData();
+        formData.append('blob', blob);
+        formData.append('filename', `${this.songTitle}_${source}.wav`);
+        formData.append('sample_rate', buffer.sampleRate);
+
+        try {
+          await $fetch('http://152.10.212.186:5000/api/midi',
+            {
+              method: 'POST',
+              body: formData,
+            }
+          );
+        } catch (err) {
+          console.log(err);
+        }
+      });
+
+      await Promise.all(promises).then(async (response) => {
+        console.log("Successfully created midis");
+        console.log("Attempting download...");
+        await this.downloadMidis().then((data) => {
+          console.log("Successfully zipped midi")
+          console.log(data)
+        }).catch((err) => {
+          console.log(err)
+        });
+      });
+      this.saving = false;
+    },
+    async downloadMidis() {
+      let formData = new FormData();
+      const zipName = `${this.songTitle}.zip`
+      const filename = this.songTitle
+      formData.append('filename', filename);
+      formData.append('zipname', zipName);
+      try {
+        const response = await $fetch('http://152.10.212.186:5000/api/midi',
+          {
+            method: 'PUT',
+            body: formData,
+          }
+        );
+        fetch(`api/midi/${zipName}`)
+          .then((response) => response.blob())
+          .then((blob) => {
+            this.downloadBlob(blob, zipName)
+          })
+          .then(() => {
+            $fetch(`http://152.10.212.186:5000/api/midi?filename=${filename}`,
+              {
+                method: 'DELETE',
+              });
+          })
+          .catch((err) => {
+            console.log(err)
+          });
+        return response;
+      } catch (err) {
+        console.log(err);
+        return null;
+      }
+    },
+    downloadBlob(blob, fileName) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     },
     drawWaveforms() {
       const canvas = this.$refs.canvas;
