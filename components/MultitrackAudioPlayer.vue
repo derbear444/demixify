@@ -5,16 +5,18 @@
     <br>
     <div class="flex items-center mb-4">
       <button @click="togglePlay" class="mr-4">
-        <svg v-if="isPlaying" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg v-if="isPlaying" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path d="M4.5 22h-3v-20h3v20zM19.5 22h-3v-20h3v20z"></path>
         </svg>
-        <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg v-else class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path d="M5 3v18l13-9L5 3z"></path>
         </svg>
       </button>
       <input type="range" min="-60" max="60" step="0.1" v-model="master_volume"
         @input="updateMasterVolume(master_volume)" />
-      <div v-for="(track, index) in tracks" :key="index" class="mr-1">
+    </div>
+    <div class="flex items-center mb-4">
+      <div v-for="(track, index) in tracks" :key="index" class="mr-5">
         <label class="flex items-center cursor-pointer">
           <input type="checkbox" v-model="track.muted" class="sr-only" />
           <svg v-if="track.muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -31,8 +33,9 @@
         </label>
         <input type="range" min="-60" max="60" step="0.1" v-model="track.volume"
           @input="updateVolume(index, track.volume)" />
-        <canvas ref="canvas"></canvas>
       </div>
+    </div>
+    <div>
       <button :class="{ 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-wait': saving }"
         :disabled="saving" @click="saveWavFiles"><span v-if="!saving">Save File</span>
         <span v-else>
@@ -228,12 +231,12 @@ export default defineComponent({
           .then((blob) => {
             this.downloadBlob(blob, zipName)
           })
-          .then(() => {
-            $fetch(`http://152.10.212.186:5000/api/midi?filename=${filename}`,
-              {
-                method: 'DELETE',
-              });
-          })
+          // .then(() => {
+          //   $fetch(`http://152.10.212.186:5000/api/midi?filename=${filename}`,
+          //     {
+          //       method: 'DELETE',
+          //     });
+          // })
           .catch((err) => {
             console.log(err)
           });
