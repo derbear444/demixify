@@ -10,16 +10,16 @@
       <form @submit.prevent="handleSendData">
         <div class="flex flex-col space-y-4">
           <input class="bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="text" v-model="text"
-            @keydown.enter="submit" placeholder="Enter text here">
+            @keydown.enter="submit" placeholder="Enter song...">
           <button class="bg-blue-500 hover:bg-blue-600 font-bold py-2 px-4 rounded" type="submit">Send
             Data</button>
           <div v-if="loading" class="flex items-center space-x-2">
             <div class="animate-pulse w-4 h-4 bg-blue-500 rounded-full"></div>
             <div class="text-white">Loading audio...</div>
           </div>
-          <MultitrackAudioPlayer v-if="showPlayer" :songTitle="text" :sources="audios" :source_names="names" />
         </div>
       </form>
+      <MultitrackAudioPlayer v-if="showPlayer" :songTitle="text" :sources="audios" :source_names="names" />
     </div>
   </div>
 </template>
