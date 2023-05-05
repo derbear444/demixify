@@ -13,5 +13,6 @@ api/data
 api/__pycache__
 api/midi
 api/wav_midi
+api/images
 *.code-workspace
 .vscode
