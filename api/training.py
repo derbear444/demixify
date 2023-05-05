@@ -24,6 +24,7 @@ data_dir = os.path.join(api_dir, 'data')
 Fs = defaults.SAMPLE_RATE
 NUM_SOURCES = defaults.NUM_SOURCES
 NUM_ITERATIONS = defaults.NUM_ITERATIONS
+SPLIT_DURATION = defaults.SPLIT_DURATION
 checkpoint = True
 
 def run(self):
@@ -88,8 +89,10 @@ def cleanup(filename, excluded_checkpoint=""):
             os.remove(os.path.join(checkpoint_dir, fname))
 
 # takes a filename and splits the song up in sources
-def demix(filename):
+def demix(filename, num_sources=NUM_SOURCES, num_iterations=NUM_ITERATIONS, split_duration=SPLIT_DURATION):
     start_time = time.time()
+
+    print(f'Running signal separation with the following parameters:\n Number Sources: {num_sources}\n Number Iterations: {num_iterations}\n Song Split Duration: {split_duration}')
 
     fn_wav_X = os.path.join(data_dir, filename)
 
@@ -103,9 +106,11 @@ def demix(filename):
     # Loads again based on half the sample rate
     audio_data_array, Fs = librosa.load(fn_wav_X, mono=False, sr=Fs/2)
 
-    # Split audio into 10-second segments
-    duration = defaults.SPLIT_DURATION * Fs # duration of each segment in seconds
+    # Split audio into n-second segments
+    split_length = split_duration * Fs
     length = audio_data_array.shape[1]
+    # if segment would be longer than length of song, just set split to length of song
+    duration = split_length if split_length < length else length # duration of each segment in seconds
     print(f'Number of splits necessary: {np.floor(length/duration)}')
     segments = final_ests.tolist() if checkpoint else []
     checkpoint_start = len(segments)-1 if checkpoint else 0
@@ -120,7 +125,7 @@ def demix(filename):
             
             DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
             separator = nussl.separation.spatial.Projet(
-                curr_mix, num_sources=NUM_SOURCES, device=DEVICE, num_iterations=NUM_ITERATIONS)
+                curr_mix, num_sources=num_sources, device=DEVICE, num_iterations=num_iterations)
 
             estimates = separator()
 
@@ -136,14 +141,16 @@ def demix(filename):
     return time_string
 
 # takes a filename and splits the song up in sources
-def demix_with_checkpoint(filename):
+def demix_with_checkpoint(filename, num_sources=NUM_SOURCES, num_iterations=NUM_ITERATIONS, split_duration=SPLIT_DURATION, regen=False):
     start_time = time.time()
+
+    print(f'Running signal separation with the following parameters:\n Number Sources: {num_sources}\n Number Iterations: {num_iterations}\n Song Split Duration: {split_duration}')
 
     fn_wav_X = os.path.join(data_dir, filename)
 
     final_ests = []
     checkpoint_name = ''
-    if checkpoint:
+    if checkpoint and not regen:
         checkpoint_nums = []
         # Loops through all checkpoints that match the filename
         for fname in os.listdir(checkpoint_dir):
@@ -160,9 +167,11 @@ def demix_with_checkpoint(filename):
 
     audio_data_array, Fs = librosa.load(fn_wav_X, mono=False, sr=None)
 
-    # Split audio into 10-second segments
-    duration = defaults.SPLIT_DURATION * Fs # duration of each segment in seconds
+    # Split audio into n-second segments
+    split_length = split_duration * Fs
     length = audio_data_array.shape[1]
+    # if segment would be longer than length of song, just set split to length of song
+    duration = split_length if split_length < length else length # duration of each segment in seconds
     max_splits = np.floor(length/duration)
     print(f'Number of splits necessary: {max_splits}')
     segments = final_ests.tolist() if checkpoint_name else []
@@ -179,7 +188,7 @@ def demix_with_checkpoint(filename):
                 
                 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
                 separator = nussl.separation.spatial.Projet(
-                    curr_mix, num_sources=NUM_SOURCES, device=DEVICE, num_iterations=NUM_ITERATIONS)
+                    curr_mix, num_sources=num_sources, device=DEVICE, num_iterations=num_iterations)
 
                 estimates = separator()
 

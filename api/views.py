@@ -69,14 +69,26 @@ def generate_full_audio():
     if args['song_name']:
         song_name = args['song_name']
 
+    if args['num_sources']:
+        num_sources = int(args['num_sources'])
+
+    if args['num_iterations']:
+        num_iterations = int(args['num_iterations'])
+
+    if args['split_duration']:
+        split_duration = int(args['split_duration'])
+
+    if args['regen']:
+        regen = bool(args['regen'])
+
     if song_name:
         results = search_song(song_name)
         wav_name = download_song(results[0], results[1])
 
         combo_list = get_combos_headless()
         combos = '\t'.join(combo_list)
-        if wav_name not in combos:
-            checkpoint_name = training.demix_with_checkpoint(wav_name)
+        if wav_name not in combos or regen:
+            checkpoint_name = training.demix_with_checkpoint(wav_name, num_sources, num_iterations, split_duration, regen)
             training.cleanup(wav_name, checkpoint_name)
             combo_name = combine.combine_with_combo(wav_name, checkpoint_name)
         json_data = cursor_to_json(visualize.generate_embeded_audio(wav_name))
