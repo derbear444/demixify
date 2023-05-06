@@ -24,9 +24,9 @@ data_dir = os.path.join(api_dir, 'data')
 #default route
 @app.route('/')
 def default():
-    return "<h1>Hello World!</h1>" \
-           "\nThis is my introduction to Flask!" \
-           "\nI can write a lot of things on this page.\nLet's get started!"
+    return "<h1>Demixify API!</h1>" \
+           "\nThere is nothing here..." \
+           "\nNavigate to <a href='http://152.10.212.186:8000/'>Demixify</a> to use the front-end."
 
 @app.route('/api/ping', methods=['GET'])
 def ping():
@@ -69,6 +69,9 @@ def generate_full_audio():
     if args['song_name']:
         song_name = args['song_name']
 
+    if args['song_id']:
+        song_id = args['song_id']
+
     if args['num_sources']:
         num_sources = int(args['num_sources'])
 
@@ -81,13 +84,12 @@ def generate_full_audio():
     if args['regen']:
         regen = bool(args['regen'])
 
-    if song_name:
-        results = search_song(song_name)
-        wav_name = download_song(results[0], results[1])
+    if song_name and song_id:
+        wav_name = download_song(song_id, song_name)
 
         combo_list = get_combos_headless()
         combos = '\t'.join(combo_list)
-        if wav_name not in combos or regen:
+        if regen or (wav_name not in combos):
             checkpoint_name = training.demix_with_checkpoint(wav_name, num_sources, num_iterations, split_duration, regen)
             training.cleanup(wav_name, checkpoint_name)
             combo_name = combine.combine_with_combo(wav_name, checkpoint_name)
@@ -280,6 +282,24 @@ def zip_midi():
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
+# searches for the name of the song against youtube
+@app.route("/api/search", methods=["GET"])
+def search_song():
+    args = request.args
+    json_data = {}
+
+    if args['song_name']:
+        song_name = args['song_name']
+
+    if song_name:
+        json_data = cursor_to_json(search_song(song_name))
+    else:
+        json_data = cursor_to_json("""No or incomplete data provided!""")
+        
+    resp = Response(json_data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
 #Extras-----------------------------------------------------------------------------
 
 def get_combos_headless():
@@ -316,7 +336,7 @@ def search_song(song_name):
     videoId = topResult["videoId"]
     videoTitle = topResult['title']
     videoArtist = topResult['artists'][0]['name']
-    return videoId, videoTitle, videoArtist
+    return [videoId, videoTitle, videoArtist]
 
 def bytes_to_base64(img_bytes):
     return base64.b64encode(img_bytes).decode('utf-8')

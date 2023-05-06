@@ -11,14 +11,15 @@
         <div class="flex flex-wrap items-center space-x-4">
           <input class="flex-grow bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="text" v-model="text"
             @keydown.enter="submit" placeholder="Enter song...">
-          <input class="flex-grow-3 bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="number" v-model="numSources"
-            min="2" max="8" placeholder="Number of sources">
-          <input class="flex-grow-3 bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="number" v-model="numIterations"
-            min="100" max="1000" placeholder="Number of iterations">
-          <input class="flex-grow-3 bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="number" v-model="duration"
-            placeholder="Duration in seconds">
+          <input class="flex-grow-3 bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="number"
+            v-model="numSources" min="2" max="8" placeholder="Number of sources">
+          <input class="flex-grow-3 bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="number"
+            v-model="numIterations" min="100" max="1000" placeholder="Number of iterations">
+          <input class="flex-grow-3 bg-gray-800 border border-gray-300 rounded-lg p-4 text-white" type="number"
+            v-model="duration" placeholder="Duration in seconds">
           <div class="flex items-center space-x-2">
-            <input type="checkbox" class="h-6 w-6 text-gray-300 border-gray-300 rounded focus:ring-0" v-model="regenIfFound">
+            <input type="checkbox" class="h-6 w-6 text-gray-300 border-gray-300 rounded focus:ring-0"
+              v-model="regenIfFound">
             <label for="regenIfFound" class="text-white">Regen if Found?</label>
           </div>
           <button class="bg-blue-500 hover:bg-blue-600 font-bold py-2 px-4 rounded" type="submit">Send Data</button>
@@ -28,7 +29,11 @@
           <div class="text-white">Loading audio...</div>
         </div>
       </form>
-      <MultitrackAudioPlayer v-if="showPlayer" :songTitle="text" :sources="audios" :source_names="names" />
+      <MultitrackAudioPlayer v-if="showPlayer" :songTitle="songName" :sources="audios" :source_names="names" />
+      <img v-if="showPlayer" :src=graphLink class="my-4" @load="toggleImageLoading"/>
+      <div v-if="showPlayer && !imageLoad" class="w-full h-96 flex justify-center items-center">
+        <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -44,10 +49,13 @@ export default {
       audios: [],
       loading: false,
       darkMode: true,
+      songName: "",
       numSources: 6,
       numIterations: 500,
       duration: 20,
       regenIfFound: false,
+      graphLink: "",
+      imageLoad: false,
     };
   },
   methods: {
@@ -84,6 +92,8 @@ export default {
             this.names = data.map((source) => source.name);
             this.audios = data.map((source) => source.audio);
           }
+        }).catch((e) => {
+          console.log(e);
         });
       }
       else {
@@ -92,15 +102,45 @@ export default {
             this.names = data.map((source) => source.name);
             this.audios = data.map((source) => source.audio);
           }
+        }).catch((e) => {
+          console.log(e);
         });
       }
       this.loading = false;
     },
     async sendData(song_name) {
       console.log("Attempting to load brand new song...")
-      console.log(`Song name: ${song_name}`)
+
+      const songNameData = await useFetch(
+        `http://152.10.212.186:5000/api/search?song_name=${song_name}`,
+        {
+          onRequest({ request, options }) {
+            // Set the request headers
+            options.headers = options.headers || {};
+            options.headers.authorization = "...";
+          },
+          onRequestError({ request, options, error }) {
+            // Handle the request errors
+            return error
+          },
+          onResponse({ request, response, options }) {
+            // Process the response data
+            return response._data;
+          },
+          onResponseError({ request, response, options }) {
+            // Handle the response errors
+          },
+        }
+      );
+      const songInfo = JSON.parse(songNameData.data.value);
+
+      const songID = songInfo[0];
+      const searchedName = songInfo[1]; 
+      this.songName = searchedName;
+
+      console.log(`Song name: ${searchedName}`);
       const { data, pending, error, refresh } = await useFetch(
-        `http://152.10.212.186:5000/api/full?song_name=${song_name}.wav&num_sources=${this.numSources}&num_iterations=${this.numIterations}&split_duration=${this.duration}&regen=${this.regenIfFound}`,
+        `http://152.10.212.186:5000/api/full?song_name=${searchedName}&song_id=${songID}&num_sources=${this.numSources}&num_iterations=${this.numIterations}&split_duration=${this.duration}&regen=${this.regenIfFound}`,
         {
           onRequest({ request, options }) {
             // Set the request headers
@@ -121,10 +161,38 @@ export default {
         }
       );
       const sourcesArr = JSON.parse(data.value);
+      this.setImageLink(searchedName);
       return sourcesArr;
     },
     async sendLimitedData(song_name) {
       console.log("Attempting to use combo already in system...")
+
+      const songNameData = await useFetch(
+        `http://152.10.212.186:5000/api/search?song_name=${song_name}`,
+        {
+          onRequest({ request, options }) {
+            // Set the request headers
+            options.headers = options.headers || {};
+            options.headers.authorization = "...";
+          },
+          onRequestError({ request, options, error }) {
+            // Handle the request errors
+            return error
+          },
+          onResponse({ request, response, options }) {
+            // Process the response data
+            return response._data;
+          },
+          onResponseError({ request, response, options }) {
+            // Handle the response errors
+          },
+        }
+      );
+      const songInfo = JSON.parse(songNameData.data.value);
+
+      const searchedName = songInfo[1]; 
+      this.songName = searchedName;
+
       console.log(`Song name: ${song_name}`)
       const { data, pending, error, refresh } = await useFetch(
         `http://152.10.212.186:5000/api/embeded_audio?combo_name=${song_name}.wav`,
@@ -148,7 +216,15 @@ export default {
         }
       );
       const sourcesArr = JSON.parse(data.value);
+      this.setImageLink(searchedName);
       return sourcesArr;
+    },
+    setImageLink(song_name) {
+      this.graphLink = `http://152.10.212.186:5000/api/visualize?combo_name=${song_name}.wav`
+    },
+    toggleImageLoading() {
+      console.log("Image finished loading!");
+      this.imageLoad = !this.imageLoad;
     },
     toggleDarkMode() {
       this.darkMode = !this.darkMode;
