@@ -144,7 +144,7 @@ def demix(filename, num_sources=NUM_SOURCES, num_iterations=NUM_ITERATIONS, spli
 def demix_with_checkpoint(filename, num_sources=NUM_SOURCES, num_iterations=NUM_ITERATIONS, split_duration=SPLIT_DURATION, regen=False):
     start_time = time.time()
 
-    print(f'Running signal separation with the following parameters:\n Number Sources: {num_sources}\n Number Iterations: {num_iterations}\n Song Split Duration: {split_duration}')
+    print(f'Running signal separation with the following parameters:\n Number Sources: {num_sources}\n Number Iterations: {num_iterations}\n Song Split Duration: {split_duration}\n Regenerate Song?: {regen}')
 
     fn_wav_X = os.path.join(data_dir, filename)
 
@@ -164,6 +164,8 @@ def demix_with_checkpoint(filename, num_sources=NUM_SOURCES, num_iterations=NUM_
             with open(os.path.join(checkpoint_dir, checkpoint_name), 'rb') as f:
                 final_ests = np.load(f, allow_pickle=True)
             print(f'Resuming with checkpoint: {checkpoint_name}')
+        else:
+            print("Found no suitable checkpoints...")
 
     audio_data_array, Fs = librosa.load(fn_wav_X, mono=False, sr=None)
 

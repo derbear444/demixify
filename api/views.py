@@ -26,7 +26,7 @@ data_dir = os.path.join(api_dir, 'data')
 def default():
     return "<h1>Demixify API!</h1>" \
            "\nThere is nothing here..." \
-           "\nNavigate to <a href='http://152.10.212.186:8000/'>Demixify</a> to use the front-end."
+           "\nnavigate to <a href='http://152.10.212.186:8000/'>Demixify</a> to use the front-end."
 
 @app.route('/api/ping', methods=['GET'])
 def ping():
@@ -82,7 +82,7 @@ def generate_full_audio():
         split_duration = int(args['split_duration'])
 
     if args['regen']:
-        regen = bool(args['regen'])
+        regen = True if args['regen'] == "true" else False
 
     if song_name and song_id:
         wav_name = download_song(song_id, song_name)
