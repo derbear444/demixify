@@ -152,8 +152,8 @@ def embeded_audio(sources):
 
 def visualize(song_name):
 
-    if song_name not in defaults.SONG_LIST:
-        return "Request song not in database."
+    # if song_name not in defaults.SONG_LIST:
+    #     return "Request song not in database."
     
     start_time = time.time()
 
